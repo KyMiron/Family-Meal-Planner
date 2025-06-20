@@ -11,6 +11,20 @@ class Ingredient {
     required this.unit,
   });
 
+  Ingredient copyWith({
+    String? id,
+    String? name,
+    double? quantity,
+    String? unit,
+  }) {
+    return Ingredient(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+    );
+  }
+
   // Optional: For saving to local DB (e.g., Hive/Sqflite)
   Map<String, dynamic> toMap() {
     return {'id': id, 'name': name, 'quantity': quantity, 'unit': unit};

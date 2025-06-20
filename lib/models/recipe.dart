@@ -3,14 +3,14 @@ import 'ingredient.dart';
 class Recipe {
   final String id;
   final String title;
-  final String? description;
+  final String description;
   final List<Ingredient> ingredients;
   final String? imagePath; // Local file path
 
   Recipe({
     required this.id,
     required this.title,
-    this.description,
+    required this.description,
     this.ingredients = const [],
     this.imagePath,
   });

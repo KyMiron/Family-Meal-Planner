@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/recipe.dart';
 import '../models/ingredient.dart';
+import 'package:uuid/uuid.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._();
@@ -48,6 +49,8 @@ class DatabaseHelper {
 
   // Recipe operations
   Future<void> insertRecipe(Recipe recipe) async {
+    print('Insert recipe: ${recipe.id} - ${recipe.title}');
+
     final dbClient = await db;
     await dbClient.insert('recipes', recipe.toMap());
     for (final ing in recipe.ingredients) {
@@ -88,8 +91,8 @@ class DatabaseHelper {
     );
   }
 
-  // Optional: Update logic
   Future<void> updateRecipe(Recipe recipe) async {
+    print('Updating recipe: ${recipe.id} - ${recipe.title}');
     final dbClient = await db;
     await dbClient.update(
       'recipes',
@@ -103,8 +106,10 @@ class DatabaseHelper {
       whereArgs: [recipe.id],
     );
     for (final ing in recipe.ingredients) {
+      final newIng = ing.copyWith(id: const Uuid().v4());
+
       await dbClient.insert('ingredients', {
-        ...ing.toMap(),
+        ...newIng.toMap(),
         'recipeId': recipe.id,
       });
     }

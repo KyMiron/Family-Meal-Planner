@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/home.dart';
-import 'screens/recipes.dart';
+import 'screens/recipe_list.dart';
 import 'screens/calendar.dart';
 import 'screens/inventory.dart';
 
@@ -14,7 +14,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
 
   final List<Widget> _screens = [
     HomeScreen(),
-    RecipesScreen(),
+    RecipeListScreen(),
     CalendarScreen(),
     InventoryScreen(),
   ];
