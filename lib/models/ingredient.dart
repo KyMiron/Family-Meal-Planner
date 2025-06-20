@@ -25,7 +25,6 @@ class Ingredient {
     );
   }
 
-  // Optional: For saving to local DB (e.g., Hive/Sqflite)
   Map<String, dynamic> toMap() {
     return {'id': id, 'name': name, 'quantity': quantity, 'unit': unit};
   }

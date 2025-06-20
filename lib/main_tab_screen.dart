@@ -3,6 +3,7 @@ import 'screens/home.dart';
 import 'screens/recipe_list.dart';
 import 'screens/calendar.dart';
 import 'screens/inventory.dart';
+import 'screens/admin_panel.dart';
 
 class MainTabScreen extends StatefulWidget {
   @override
@@ -29,7 +30,20 @@ class _MainTabScreenState extends State<MainTabScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_selectedIndex])),
+      appBar: AppBar(
+        title: Text(_titles[_selectedIndex]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.lock),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,

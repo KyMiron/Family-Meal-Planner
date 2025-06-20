@@ -2,7 +2,9 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/recipe.dart';
 import '../models/ingredient.dart';
+import '../models/meal_plan.dart';
 import 'package:uuid/uuid.dart';
+import 'database_models.dart' as dm;
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._();
@@ -27,30 +29,50 @@ class DatabaseHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE recipes (
-        id TEXT PRIMARY KEY,
-        title TEXT,
-        description TEXT,
-        imagePath TEXT
-      )
+      CREATE TABLE ${dm.recipes}
     ''');
 
     await db.execute('''
-      CREATE TABLE ingredients (
-        id TEXT PRIMARY KEY,
-        recipeId TEXT,
-        name TEXT,
-        quantity REAL,
-        unit TEXT,
-        FOREIGN KEY(recipeId) REFERENCES recipes(id) ON DELETE CASCADE
-      )
+      CREATE TABLE ${dm.ingredients}
     ''');
+
+    await db.execute('''
+      CREATE TABLE ${dm.mealPlan}
+    ''');
+  }
+
+  Future<void> resetDatabase() async {
+    final dbClient = await db;
+    await dbClient.execute('''
+      DROP TABLE IF EXISTS recipes
+    ''');
+    await dbClient.execute('''
+      CREATE TABLE ${dm.recipes}
+    ''');
+    await dbClient.execute('''
+      DROP TABLE IF EXISTS ingredients
+    ''');
+    await dbClient.execute('''
+      CREATE TABLE ${dm.ingredients}
+    ''');
+    await dbClient.execute('''
+      DROP TABLE IF EXISTS mealplans
+    ''');
+    await dbClient.execute('''
+      CREATE TABLE ${dm.mealPlan}
+    ''');
+  }
+
+  Future<void> seedDatabase() async {}
+
+  Future<List> getTable(String tableName) async {
+    final dbClient = await db;
+    final recipesData = await dbClient.query(tableName);
+    return recipesData;
   }
 
   // Recipe operations
   Future<void> insertRecipe(Recipe recipe) async {
-    print('Insert recipe: ${recipe.id} - ${recipe.title}');
-
     final dbClient = await db;
     await dbClient.insert('recipes', recipe.toMap());
     for (final ing in recipe.ingredients) {
@@ -92,7 +114,6 @@ class DatabaseHelper {
   }
 
   Future<void> updateRecipe(Recipe recipe) async {
-    print('Updating recipe: ${recipe.id} - ${recipe.title}');
     final dbClient = await db;
     await dbClient.update(
       'recipes',
@@ -113,5 +134,44 @@ class DatabaseHelper {
         'recipeId': recipe.id,
       });
     }
+  }
+
+  Future<void> saveMealPlan(String date, String recipeId) async {
+    final dbClient = await db; // your openDatabase() method
+    await dbClient.insert(
+      'mealplans',
+      MealPlan(id: const Uuid().v4(), date: date, recipeId: recipeId).toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace, // overwrite if same ID
+    );
+  }
+
+  Future<void> updateMealPlan(MealPlan meal) async {
+    final dbClient = await db;
+    await dbClient.update(
+      'mealplans',
+      meal.toMap(),
+      where: 'id = ?',
+      whereArgs: [meal.id],
+    );
+  }
+
+  Future<MealPlan?> getMealPlanByDate(String date) async {
+    final dbClient = await db;
+    final result = await dbClient.query(
+      'mealplans',
+      where: 'date = ?',
+      whereArgs: [date],
+    );
+
+    if (result.isNotEmpty) {
+      return MealPlan.fromMap(result.first);
+    }
+    return null;
+  }
+
+  Future<List<MealPlan>> getAllMealPlans() async {
+    final dbClient = await db;
+    final result = await dbClient.query('mealplans');
+    return result.map((e) => MealPlan.fromMap(e)).toList();
   }
 }
