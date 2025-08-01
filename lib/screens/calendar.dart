@@ -47,7 +47,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ],
       );
     }
-
+    if (!mounted) return;
     setState(() {
       _mealsByDate = map;
     });
@@ -131,7 +131,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
       );
     }
-
     _loadMealPlans(); // reload calendar display
   }
 }

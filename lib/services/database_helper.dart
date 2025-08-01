@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import '../models/recipe.dart';
 import '../models/ingredient.dart';
 import '../models/meal_plan.dart';
+import '../data/seed_data.dart';
 import 'package:uuid/uuid.dart';
 import 'database_models.dart' as dm;
 
@@ -63,7 +64,14 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> seedDatabase() async {}
+  Future<void> seedDatabase() async {
+    for (final r in recipes) {
+      insertRecipe(r);
+    }
+    for (final m in mealPlans) {
+      saveMealPlan(m);
+    }
+  }
 
   Future<List> getTable(String tableName) async {
     final dbClient = await db;
