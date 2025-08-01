@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:meal_planner/models/meal_plan.dart';
+import 'package:meal_planner/dialogues/date_selected.dart';
+import 'package:meal_planner/dialogues/meal_plan_editor.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/database_helper.dart';
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({Key? key}) : super(key: key);
+  const CalendarScreen({super.key});
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -14,23 +15,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _focusedDay = DateTime.now();
   final _db = DatabaseHelper();
 
-  Map<DateTime, List<String>> _mealsByDate = {}; // date -> [recipeTitle]
+  Map<DateTime, List<Map<String, dynamic>>> _mealsByDate = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMealPlans();
+  }
 
   Future<void> _loadMealPlans() async {
     final db = _db;
     final mealPlanMaps = await db.getAllMealPlans();
     final recipeMaps = await db.getAllRecipes();
-
     final recipes = {for (var r in recipeMaps) r.id: r.title};
 
-    final map = <DateTime, List<String>>{};
+    final map = <DateTime, List<Map<String, dynamic>>>{};
     for (var plan in mealPlanMaps) {
-      final date = DateTime.parse(plan.date).toLocal();
+      final fullDate = DateTime.parse(plan.date);
+      final date = DateTime(fullDate.year, fullDate.month, fullDate.day);
       final recipeTitle = recipes[plan.recipeId] ?? 'Unknown';
+      final mealType = plan.mealType;
+
       map.update(
         date,
-        (existing) => [...existing, recipeTitle],
-        ifAbsent: () => [recipeTitle],
+        (existing) => [
+          ...existing,
+          {'title': recipeTitle, 'type': mealType},
+        ],
+        ifAbsent: () => [
+          {'title': recipeTitle, 'type': mealType},
+        ],
       );
     }
 
@@ -39,9 +53,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
+  Color _colorForMealType(String type) {
+    switch (type) {
+      case 'breakfast':
+        return Colors.orange;
+      case 'lunch':
+        return Colors.blue;
+      case 'dinner':
+      default:
+        return Colors.green;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    _loadMealPlans();
     return Column(
       children: [
         TableCalendar(
@@ -52,22 +77,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
             return _mealsByDate[DateTime(day.year, day.month, day.day)] ?? [];
           },
           calendarBuilders: CalendarBuilders(
-            markerBuilder: (context, day, events) {
+            markerBuilder: (context, date, events) {
               if (events.isEmpty) return null;
-              return Column(
-                children: events
-                    .map(
-                      (title) => Text(
-                        title.toString(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Colors.green,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )
-                    .toList(),
+              return Wrap(
+                spacing: 2,
+                children: events.map((event) {
+                  final e = event as Map<String, dynamic>;
+                  final title = e['title'] ?? 'Meal';
+                  final type = e['type'] ?? 'dinner';
+                  final color = _colorForMealType(type);
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    margin: const EdgeInsets.only(top: 2),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      title,
+                      style: const TextStyle(color: Colors.white, fontSize: 9),
+                      overflow: TextOverflow.visible,
+                    ),
+                  );
+                }).toList(),
               );
             },
           ),
@@ -82,41 +117,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _focusedDay = focusedDay;
     });
 
-    final db = _db;
-    final recipes = await db.getAllRecipes();
-
-    final selected = await showDialog<String>(
+    final mealId = await showDialog<String>(
       context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(
-          "Select Recipe for ${selectedDay.toLocal().toString().split(' ')[0]}",
-        ),
-        children: recipes.map((recipe) {
-          return SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, recipe.id),
-            child: Text(recipe.title),
-          );
-        }).toList(),
-      ),
+      builder: (context) =>
+          MealSelectDialog(selectedDate: selectedDay.toIso8601String()),
     );
-
-    if (selected != null) {
-      final dateKey = DateTime(
-        selectedDay.year,
-        selectedDay.month,
-        selectedDay.day,
+    if (mealId != 'cancel') {
+      await showDialog<String>(
+        context: context,
+        builder: (context) => MealPlanEditor(
+          selectedDate: selectedDay.toIso8601String(),
+          mealPlanId: mealId,
+        ),
       );
-      final existing = await db.getMealPlanByDate(dateKey.toIso8601String());
-
-      if (existing != null) {
-        db.updateMealPlan(
-          MealPlan(id: existing.id, date: existing.date, recipeId: selected),
-        );
-      } else {
-        db.saveMealPlan(dateKey.toIso8601String(), selected);
-      }
-
-      _loadMealPlans(); // reload calendar display
     }
+
+    _loadMealPlans(); // reload calendar display
   }
 }

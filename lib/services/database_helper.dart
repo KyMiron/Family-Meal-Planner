@@ -136,13 +136,9 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> saveMealPlan(String date, String recipeId) async {
+  Future<void> saveMealPlan(MealPlan mealPlan) async {
     final dbClient = await db; // your openDatabase() method
-    await dbClient.insert(
-      'mealplans',
-      MealPlan(id: const Uuid().v4(), date: date, recipeId: recipeId).toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace, // overwrite if same ID
-    );
+    await dbClient.insert('mealplans', {...mealPlan.toMap()});
   }
 
   Future<void> updateMealPlan(MealPlan meal) async {
@@ -155,12 +151,23 @@ class DatabaseHelper {
     );
   }
 
-  Future<MealPlan?> getMealPlanByDate(String date) async {
+  Future<List<MealPlan>> getMealPlansByDate(String date) async {
     final dbClient = await db;
     final result = await dbClient.query(
       'mealplans',
       where: 'date = ?',
       whereArgs: [date],
+    );
+
+    return result.map((e) => MealPlan.fromMap(e)).toList();
+  }
+
+  Future<MealPlan?> getMealPlanByID(String id) async {
+    final dbClient = await db;
+    final result = await dbClient.query(
+      'mealplans',
+      where: 'id = ?',
+      whereArgs: [id],
     );
 
     if (result.isNotEmpty) {

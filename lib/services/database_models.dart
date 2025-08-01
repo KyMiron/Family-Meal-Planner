@@ -2,7 +2,8 @@ String mealPlan = '''
       mealplans (
         id TEXT PRIMARY KEY, 
         date TEXT NOT NULL,
-        recipeId TEXT NOT NULL
+        recipeId TEXT NOT NULL,
+        mealType TEXT
       )
       ''';
 String recipes = '''
